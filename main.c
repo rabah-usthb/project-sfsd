@@ -31,6 +31,20 @@ printf("Matricule : %s\n",etudiant.matricule);
 printf("moyenne : %f\n",etudiant.moyenne);
 }
 
+void write_block(FILE* file,void* T,int facteur_blockage,size_t size_of_element,int n){
+    block_header block;
+    strcpy(block.data_type,"Etudiant");
+    for(int i = 0;i<n;i=i+facteur_blockage){
+        block.block_size = size_of_element *facteur_blockage;
+        size_t block_memory_size = sizeof(block_header)+block.block_size;
+        void* buffer = malloc(block_memory_size);
+        memcpy(buffer,&block,sizeof(block_header));
+        memcpy(buffer+sizeof(block_header),T+i,size_of_element*facteur_blockage);
+        fwrite(buffer,block_memory_size,1,file);
+
+    }
+}
+
 
 
 
