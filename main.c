@@ -91,7 +91,37 @@ int recherche (char*chemin_fichier,char*matricule_cible)
          Etudiant etudiant_courant ;
          block_header  bloc_courant;
 
+          // Boucle pour parcourir chaque bloc dans le fichier
+          for (int i = 0; i < entete_fichier.nb_element; i++) {
 
+           // Lecture de l'entête du bloc courant
+           fread(&bloc_courant, sizeof(block_header), 1, fichier);
+
+          // Lecture des données (étudiants) du bloc courant
+           fread(&etudiant_courant, sizeof(Etudiant), bloc_courant.block_size / sizeof(Etudiant), fichier);
+
+            // Boucle pour parcourir chaque étudiant dans le bloc courant
+          for (int j = 0; j < bloc_courant.block_size / sizeof(Etudiant); j++) {
+
+            // Comparaison du matricule de l'étudiant avec le matricule cible
+
+            if (strcmp(etudiant_courant.matricule, matricule_cible) == 0) {
+
+                // Affichage des détails de l'étudiant trouvé
+                printf("Élément trouvé :\n");
+                read_element(&etudiant_courant);
+                // Fermeture du fichier et retour de l'indice du bloc où l'élément a été trouvé
+                fclose(fichier);
+                return i;
+            }
+            }
+        }
+
+    // Affichage si l'élément n'est pas trouvé
+    printf("Élément non trouvé.\n");
+    // Fermeture du fichier et retour d'un code d'erreur
+    fclose(fichier);
+    return -2;
 }
 
 int main(){
