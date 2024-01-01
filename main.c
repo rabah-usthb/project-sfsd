@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-// definir structure de l'etudiant
+// définir structure de l'étudiant
 typedef struct Etudiant{
 char matricule[13];
 char nom[50];
@@ -70,6 +70,29 @@ void insertion_block(char* file_path,void* T,int facteur_blockage,size_t size_of
 
 }
 
+// Fonction de recherche d'un étudiant par matricule dans un fichier
+int recherche (char*chemin_fichier,char*matricule_cible)
+{
+        // Ouverture du fichier en mode lecture binaire
+        FILE* fichier=fopen(chemin_fichier,"rb");
+
+        if (fichier==NULL)
+        {
+            printf("error lors du l'ouverture du fichier");
+            return -1; 
+        }
+
+            // Lecture de l'entête du fichier
+            file_header entete_fichier;
+            fread(&entete_fichier,sizeof(file_header),1,fichier);
+
+
+      // Déclaration des structures pour stocker les données de l'étudiant et du bloc courant
+         Etudiant etudiant_courant ;
+         block_header  bloc_courant;
+
+
+}
 
 int main(){
 
