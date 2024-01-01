@@ -124,6 +124,18 @@ int recherche (char*chemin_fichier,char*matricule_cible)
     return -2;
 }
 
+
+void create_file(char* name, char*file_extension){
+    // Concatenation du nom + extension
+    char* Full_file_name = malloc(strlen(name) + strlen(file_extension) + 2);
+    strcpy(Full_file_name, name);
+    strcat(Full_file_name, file_extension);
+
+    FILE *file = fopen(Full_file_name, "wb");
+
+}
+
+
 int main(){
 
     return 0;
