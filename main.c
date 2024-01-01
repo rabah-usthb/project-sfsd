@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-
+// definir structure de l'etudiant
 typedef struct Etudiant{
 char matricule[13];
 char nom[50];
