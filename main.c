@@ -137,10 +137,20 @@ void create_file(char* name, char*file_extension){
     char* Full_file_name = malloc(strlen(name) + strlen(file_extension) + 2);
     strcpy(Full_file_name, name);
     strcat(Full_file_name, file_extension);
-
+    
+    //initialisation de l'entete du fichier
     FILE *file = fopen(Full_file_name, "wb");
+    file_header header;
+    strcpy(header.file_name , name);
+    strcpy(header.file_extension , file_extension);
+    header.file_size = sizeof(file_header);
+    header.nb_element = 0;
+    fwrite(&header, sizeof(file_header), 1 ,file);
+    fclose(file);
+    free(Full_file_name);
 
 }
+
 
 
 int main(){
