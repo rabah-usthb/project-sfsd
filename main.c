@@ -59,7 +59,7 @@ void insertion_block(char* file_path,void* T,int facteur_blockage,size_t size_of
         size_t block_memory_size = sizeof(block_header)+block.block_size;
          buffer = malloc(block_memory_size);
         memcpy(buffer,&block,sizeof(block_header));
-        memcpy(buffer+sizeof(block_header),T+i,size_of_element*facteur);
+        memcpy(buffer+sizeof(block_header),(Etudiant*)T+i,size_of_element*facteur);
         fwrite(buffer,block_memory_size,1,file);
 
     }
@@ -196,10 +196,12 @@ while(fread(&header_block,sizeof(block_header),1,file)>0){
     fread(T+i,sizeof(Etudiant),header_block.real_nb_block_element,file);
     i = i + header_block.real_nb_block_element;
     if(header_block.facteur_blockage!=header_block.real_nb_block_element){
+
         fseek(file,(header_block.facteur_blockage-header_block.real_nb_block_element)*sizeof(Etudiant),SEEK_CUR);
     }
 }
 else{
+
     fseek(file,sizeof(Etudiant)*header_block.facteur_blockage,SEEK_CUR);
 }
 
