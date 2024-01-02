@@ -184,6 +184,34 @@ void suppression(char* chemin_fichier, char* matricule_cible) {
 
 }
 
+void read_file(char* file_path){
+FILE* file = fopen(file_path,"rb");
+file_header header_file;
+fread(&header_file,sizeof(file_header),1,file);
+Etudiant T[header_file.nb_element];
+block_header header_block;
+int i = 0;
+while(fread(&header_block,sizeof(block_header),1,file)>0){
+    if(header_block.real_nb_block_element!=0){
+    fread(T+i,sizeof(Etudiant),header_block.real_nb_block_element,file);
+    i = i + header_block.real_nb_block_element;
+    if(header_block.facteur_blockage!=header_block.real_nb_block_element){
+        fseek(file,(header_block.facteur_blockage-header_block.real_nb_block_element)*sizeof(Etudiant),SEEK_CUR);
+    }
+}
+else{
+    fseek(file,sizeof(Etudiant)*header_block.facteur_blockage,SEEK_CUR);
+}
+
+}
+
+for(int j = 0 ; j < header_file.nb_element;j++)
+    read_element(T[j]);
+
+fclose(file);
+}
+
+
 
 
 int main(){
