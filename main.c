@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-// définir structure de l'étudiant
+// definir structure de l'etudiant
 typedef struct Etudiant{
 char matricule[13];
 char nom[50];
@@ -77,10 +77,10 @@ void insertion_block(char* file_path,void* T,int facteur_blockage,size_t size_of
 
 }
 
-// Fonction de recherche d'un étudiant par matricule dans un fichier
+// Fonction de recherche d'un etudiant par matricule dans un fichier
 int recherche (char*chemin_fichier,char*matricule_cible)
 {
-        // Ouverture du fichier en mode lecture binaire
+        // Ouverture du fichier en mode lecture 
         FILE* fichier=fopen(chemin_fichier,"rb");
 
         if (fichier==NULL)
@@ -89,43 +89,43 @@ int recherche (char*chemin_fichier,char*matricule_cible)
             return -1; 
         }
 
-            // Lecture de l'entête du fichier
+            // Lecture de l'entete du fichier
             file_header entete_fichier;
             fread(&entete_fichier,sizeof(file_header),1,fichier);
 
 
-      // Déclaration des structures pour stocker les données de l'étudiant et du bloc courant
+      // Declaration des structures pour stocker les donnees de l'etudiant et du bloc courant
          Etudiant etudiant_courant ;
          block_header  bloc_courant;
 
           // Boucle pour parcourir chaque bloc dans le fichier
           for (int i = 0; i < entete_fichier.nb_element; i++) {
 
-           // Lecture de l'entête du bloc courant
+           // Lecture de l'entete du bloc courant
            fread(&bloc_courant, sizeof(block_header), 1, fichier);
 
-          // Lecture des données (étudiants) du bloc courant
+          // Lecture des donnees (etudiants) du bloc courant
            fread(&etudiant_courant, sizeof(Etudiant), bloc_courant.block_size / sizeof(Etudiant), fichier);
 
-            // Boucle pour parcourir chaque étudiant dans le bloc courant
+            // Boucle pour parcourir chaque etudiant dans le bloc courant
           for (int j = 0; j < bloc_courant.block_size / sizeof(Etudiant); j++) {
 
-            // Comparaison du matricule de l'étudiant avec le matricule cible
+            // Comparaison du matricule de l'etudiant avec le matricule cible
 
             if (strcmp(etudiant_courant.matricule, matricule_cible) == 0) {
 
-                // Affichage des détails de l'étudiant trouvé
-                printf("Élément trouvé :\n");
+                // Affichage des details de l'etudiant trouve
+                printf("Element trouve :\n");
                 read_element(&etudiant_courant);
-                // Fermeture du fichier et retour de l'indice du bloc où l'élément a été trouvé
+                // Fermeture du fichier et retour de l'indice du bloc ou l'element a ete trouve
                 fclose(fichier);
                 return i;
             }
             }
         }
 
-    // Affichage si l'élément n'est pas trouvé
-    printf("Élément non trouvé.\n");
+    // Affichage si l'element n'est pas trouve
+    printf("Element non trouve.\n");
     // Fermeture du fichier et retour d'un code d'erreur
     fclose(fichier);
     return -2;
@@ -148,6 +148,39 @@ void create_file(char* name, char*file_extension){
     fwrite(&header, sizeof(file_header), 1 ,file);
     fclose(file);
     free(Full_file_name);
+
+}
+
+
+
+// Fonction de suppression d'un etudiant par matricule dans un fichier
+void suppression(char* chemin_fichier, char* matricule_cible) {
+    // Ouverture du fichier en mode lecture et ecriture 
+    FILE* fichier = fopen(chemin_fichier, "r+b");
+
+    if (fichier == NULL) {
+        perror("Erreur lors de l'ouverture du fichier");
+        return -1;
+    }
+
+    // Lecture de l'entete du fichier
+    file_header entete_fichier;
+    if (fread(&entete_fichier, sizeof(file_header), 1, fichier) != 1) {
+        perror("Erreur lors de la lecture de l'entete du fichier");
+        fclose(fichier);
+        return -1;
+    }
+
+    // Verification si le fichier est vide
+    if (entete_fichier.nb_element == 0) {
+        printf("Le fichier est vide, aucune suppression possible.\n");
+        fclose(fichier);
+        return -1;
+    }
+
+    // Declaration des structures pour stocker les donnees de letudiant et du bloc courant
+    Etudiant etudiant_courant;
+    block_header bloc_courant;
 
 }
 
