@@ -138,8 +138,12 @@ void create_file(char* name, char*file_extension){
     strcpy(Full_file_name, name);
     strcat(Full_file_name, file_extension);
     
-    //initialisation de l'entete du fichier
+    //verifier si le nom a éte deja utilisé
+    FILE *Existence = fopen(Full_file_name,"rb");
+    if (Existence == NULL){
+
     FILE *file = fopen(Full_file_name, "wb");
+    //initialization du file header
     file_header header;
     strcpy(header.file_name , name);
     strcpy(header.file_extension , file_extension);
@@ -148,6 +152,12 @@ void create_file(char* name, char*file_extension){
     fwrite(&header, sizeof(file_header), 1 ,file);
     fclose(file);
     free(Full_file_name);
+    }
+    else 
+    {
+        fclose (Existence);
+        printf("un fichier utilisant le meme nom existe deja, veuillez reessayer avec un autre nom");
+    }
 
 }
 
