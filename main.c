@@ -9,7 +9,7 @@ char prenom[50];
 float moyenne;
 }Etudiant;
 
-
+//definir structure de l'entete de fichier
 typedef struct file_header{
     size_t file_size;
     char file_name[50];
@@ -17,7 +17,7 @@ typedef struct file_header{
     int nb_element;
 }file_header;
 
-
+// definir structure de l'entete de bloc 
 typedef struct block_header{
     size_t  block_size;
     int real_nb_block_element;
@@ -108,7 +108,7 @@ int recherche (char*chemin_fichier,char*matricule_cible)
             if (strcmp(etudiant_courant.matricule, matricule_cible) == 0) {
                 // Affichage des details de l'etudiant trouve
                 printf("Element trouve :\n");
-                read_element(&etudiant_courant);
+                read_element(etudiant_courant);
                 // Fermeture du fichier et retour de l'indice du bloc ou l'element a ete trouve
                 fclose(fichier);
                 return i;
@@ -207,7 +207,7 @@ void suppression(char* file_path, char* matricule_cible) {
         fread(bloc_buffer + sizeof(block_header), bloc_courant.block_size, 1, file);
 
         for (int j = 0; j < bloc_courant.real_nb_block_element; j++) {
-            if (strcmp(((Etudiant*)(bloc_buffer + sizeof(block_header))) + j, matricule_cible) == 0) {
+            if (strcmp(((bloc_buffer + sizeof(block_header))) + j, matricule_cible) == 0) {
                 // Si l'etudiant est trouve, ne pas le copier dans le buffer principal
                 bloc_courant.real_nb_block_element--;
 
@@ -242,7 +242,7 @@ void suppression(char* file_path, char* matricule_cible) {
 
 int main() {
     
-    char fetd[] = "etudiants.bin";
+    char fetd[] = "etudiant.bin";
     Etudiant etudiant1 = {"222231546468", "Boualit", "mohamed", 15};
     Etudiant etudiant2 = {"222214864984", "chaabane", "rabah", 15};
     Etudiant etudiant3 = {"2231518484648", "akouira", "djemou", 15};
@@ -261,7 +261,7 @@ int main() {
 
     // Recherche d'un etudiant par matricule
     char matricule_cible[] = "222231546468";
-    int indice = recherche(fetd, matricule_cible);
+    int indice = recherche(fetd,matricule_cible);
     if (indice != -1) {
         printf("L'etudiant avec le matricule %s a ete trouve a l'indice %d.\n", matricule_cible, indice);
     }
@@ -271,7 +271,7 @@ int main() {
 
     // Affichage du contenu du fichier apres suppression
     printf("\nContenu du fichier apres suppression :\n");
-    read_file(filename);
+    read_file(fetd);
 
     return 0;
 }
