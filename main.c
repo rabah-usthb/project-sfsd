@@ -240,7 +240,38 @@ void suppression(char* file_path, char* matricule_cible) {
 
 
 
-int main(){
+int main() {
+    
+    char fetd[] = "etudiants.bin";
+    Etudiant etudiant1 = {"222231546468", "Boualit", "mohamed", 15};
+    Etudiant etudiant2 = {"222214864984", "chaabane", "rabah", 15};
+    Etudiant etudiant3 = {"2231518484648", "akouira", "djemou", 15};
+
+    // Creation du fichier s'il n'existe pas
+    create_file(fetd, ".bin");
+
+    // Insertion des etudiants dans le fichier
+    insertion_block(fetd, &etudiant1, 1, sizeof(Etudiant), 1);
+    insertion_block(fetd, &etudiant2, 1, sizeof(Etudiant), 1);
+    insertion_block(fetd, &etudiant3, 1, sizeof(Etudiant), 1);
+
+    // Affichage du contenu du fichier
+    printf("Contenu du fichier apres insertion :\n");
+    read_file(fetd);
+
+    // Recherche d'un etudiant par matricule
+    char matricule_cible[] = "222231546468";
+    int indice = recherche(fetd, matricule_cible);
+    if (indice != -1) {
+        printf("L'etudiant avec le matricule %s a ete trouve a l'indice %d.\n", matricule_cible, indice);
+    }
+
+    // Suppression d'un etudiant par matricule
+    suppression(fetd, matricule_cible);
+
+    // Affichage du contenu du fichier apres suppression
+    printf("\nContenu du fichier apres suppression :\n");
+    read_file(filename);
 
     return 0;
 }
