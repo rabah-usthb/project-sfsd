@@ -93,27 +93,19 @@ int recherche (char*chemin_fichier,char*matricule_cible)
             file_header entete_fichier;
             fread(&entete_fichier,sizeof(file_header),1,fichier);
 
-
       // Declaration des structures pour stocker les donnees de l'etudiant et du bloc courant
          Etudiant etudiant_courant ;
          block_header  bloc_courant;
-
           // Boucle pour parcourir chaque bloc dans le fichier
           for (int i = 0; i < entete_fichier.nb_element; i++) {
-
            // Lecture de l'entete du bloc courant
            fread(&bloc_courant, sizeof(block_header), 1, fichier);
-
           // Lecture des donnees (etudiants) du bloc courant
            fread(&etudiant_courant, sizeof(Etudiant), bloc_courant.block_size / sizeof(Etudiant), fichier);
-
             // Boucle pour parcourir chaque etudiant dans le bloc courant
           for (int j = 0; j < bloc_courant.block_size / sizeof(Etudiant); j++) {
-
             // Comparaison du matricule de l'etudiant avec le matricule cible
-
             if (strcmp(etudiant_courant.matricule, matricule_cible) == 0) {
-
                 // Affichage des details de l'etudiant trouve
                 printf("Element trouve :\n");
                 read_element(&etudiant_courant);
@@ -161,39 +153,6 @@ void create_file(char* name, char*file_extension){
 
 }
 
-
-
-// Fonction de suppression d'un etudiant par matricule dans un fichier
-void suppression(char* chemin_fichier, char* matricule_cible) {
-    // Ouverture du fichier en mode lecture et ecriture 
-    FILE* fichier = fopen(chemin_fichier, "r+b");
-
-    if (fichier == NULL) {
-        perror("Erreur lors de l'ouverture du fichier");
-        return -1;
-    }
-
-    // Lecture de l'entete du fichier
-    file_header entete_fichier;
-    if (fread(&entete_fichier, sizeof(file_header), 1, fichier) != 1) {
-        perror("Erreur lors de la lecture de l'entete du fichier");
-        fclose(fichier);
-        return -1;
-    }
-
-    // Verification si le fichier est vide
-    if (entete_fichier.nb_element == 0) {
-        printf("Le fichier est vide, aucune suppression possible.\n");
-        fclose(fichier);
-        return -1;
-    }
-
-    // Declaration des structures pour stocker les donnees de letudiant et du bloc courant
-    Etudiant etudiant_courant;
-    block_header bloc_courant;
-
-}
-
 void read_file(char* file_path){
 FILE* file = fopen(file_path,"rb");
 file_header header_file;
@@ -221,6 +180,61 @@ for(int j = 0 ; j < header_file.nb_element;j++)
     read_element(T[j]);
 
 fclose(file);
+}
+
+void suppression(char* file_path, char* matricule_cible) {
+    FILE* file = fopen(file_path, "r+b");
+
+    if (file == NULL) {
+        printf("Erreur lors de l'ouverture du fichier");
+        return;
+    }
+
+    file_header header;
+    fread(&header, sizeof(file_header), 1, file);
+    Etudiant etudiant_courant;
+    block_header bloc_courant;
+
+    // Tableau pour stocker les blocs
+    void* buffer = malloc(header.file_size);
+    int buffer_index = 0;
+    for (int i = 0; i < header.nb_element; i++) {
+        fread(&bloc_courant, sizeof(block_header), 1, file);
+        // Allocation d'un espace pour le bloc courant dans le buffer
+        void* bloc_buffer = malloc(sizeof(block_header) + bloc_courant.block_size);
+        // Copie de l'entete du bloc courant dans le buffer du bloc
+        memcpy(bloc_buffer, &bloc_courant, sizeof(block_header));
+        fread(bloc_buffer + sizeof(block_header), bloc_courant.block_size, 1, file);
+
+        for (int j = 0; j < bloc_courant.real_nb_block_element; j++) {
+            if (strcmp(((Etudiant*)(bloc_buffer + sizeof(block_header))) + j, matricule_cible) == 0) {
+                // Si l'etudiant est trouve, ne pas le copier dans le buffer principal
+                bloc_courant.real_nb_block_element--;
+
+                // Liberation de la memoire allouee pour le buffer du bloc
+                free(bloc_buffer);
+                continue;
+            }
+            // Copier l'etudiant dans le buffer principal
+            memcpy(buffer + buffer_index, bloc_buffer + sizeof(block_header) + j * sizeof(Etudiant), sizeof(Etudiant));
+            buffer_index += sizeof(Etudiant);
+        }
+        free(bloc_buffer);
+        // Mettre a jour l'entete du bloc
+        memcpy(buffer + buffer_index, &bloc_courant, sizeof(block_header));
+        buffer_index += sizeof(block_header);
+    }
+    
+    fseek(file, 0, SEEK_SET);
+    header.nb_element--;
+    header.file_size = buffer_index;
+    fwrite(&header, sizeof(file_header), 1, file);
+    // Reecrire le buffer dans le fichier
+    fseek(file, sizeof(file_header), SEEK_SET);
+    fwrite(buffer, buffer_index - sizeof(file_header), 1, file);
+
+    free(buffer);
+    fclose(file);
 }
 
 
