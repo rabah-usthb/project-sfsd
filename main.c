@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-// definir structure de l'etudiant
+
+GtkBuilder *globalbuilder;
+GtkBuilder *create_builder;
+
 typedef struct Etudiant {
   char matricule[13];
   char nom[50];
@@ -74,48 +77,6 @@ void insertion_block(char *file_path, void *T, int facteur_blockage,
   fclose(file);
 }
 
-void create_file(char *name, char *file_extension) {
-  char *Full_file_name = malloc(strlen(name) + strlen(file_extension) + 2);
-  strcpy(Full_file_name, name);
-  strcat(Full_file_name, file_extension);
-
-  FILE *file = fopen(Full_file_name, "wb");
-  if (file == NULL) {
-    // Handle file creation failure
-    printf("Failed to create file\n");
-    free(Full_file_name);
-    return;
-  }
-
-  file_header header;
-  strcpy(header.file_name, name);
-  strcpy(header.file_extension, file_extension);
-  header.file_size = sizeof(file_header);
-  header.nb_element = 0;
-  fwrite(&header, sizeof(file_header), 1, file);
-  fclose(file);
-
-  GtkBuilder *builder = gtk_builder_new();
-  gtk_builder_add_from_file(builder, "design5.glade", NULL);
-  GtkListBox *fileList =
-      GTK_LIST_BOX(gtk_builder_get_object(builder, "ListFIle"));
-
-  // Create a new button with a label
-  GtkWidget *newButton = gtk_button_new_with_label(Full_file_name);
-
-  // Connect a callback (signal) to the button, if needed
-  // g_signal_connect(newButton, "clicked", G_CALLBACK(your_callback_function),
-  // NULL);
-
-  // Add the new button to the GtkListBox
-  gtk_list_box_insert(fileList, newButton, -1);
-
-  // Show all widgets
-  gtk_widget_show_all(GTK_WIDGET(fileList));
-
-  free(Full_file_name);
-  g_object_unref(builder);
-}
 void read_file(char *file_path) {
   FILE *file = fopen(file_path, "rb");
   file_header header_file;
@@ -269,25 +230,49 @@ int exist(char *file_name, char *file_extension) {
   }
 }
 
-void retrieve_input_file_name(GtkButton *button, gpointer user_data) {
-  GtkBuilder *builder = GTK_BUILDER(user_data);
+void create_file(char *name, char *file_extension, GtkListBox *listfile) {
+  // Concatenation du nom + extension
+  char *Full_file_name = malloc(strlen(name) + strlen(file_extension) + 1);
+  strcpy(Full_file_name, name);
+  strcat(Full_file_name, file_extension);
+
+  // initialisation de l'entete du fichier
+  FILE *file = fopen(Full_file_name, "wb");
+  file_header header;
+  strcpy(header.file_name, name);
+  strcpy(header.file_extension, file_extension);
+  header.file_size = sizeof(file_header);
+  header.nb_element = 0;
+  fwrite(&header, sizeof(file_header), 1, file);
+  fclose(file);
+
+  // Create a new button
+  GtkWidget *newButton = gtk_button_new_with_label(Full_file_name);
+  GtkWidget *row = gtk_list_box_row_new();
+  gtk_container_add(GTK_CONTAINER(row), newButton);
+  // Add the button to the ListBox
+  gtk_list_box_insert(listfile, row, -1); // Use 'row' instead of 'newButton'
+  gtk_widget_show_all(GTK_WIDGET(listfile));
+  free(Full_file_name);
+}
+void retrieve_input_file_name(GtkButton *button) {
   GtkWidget *fileNameEntry =
-      GTK_WIDGET(gtk_builder_get_object(builder, "FileNameField"));
+      GTK_WIDGET(gtk_builder_get_object(create_builder, "FileNameField"));
   GtkWidget *fileExtensionEntry =
-      GTK_WIDGET(gtk_builder_get_object(builder, "FileExtensionField"));
+      GTK_WIDGET(gtk_builder_get_object(create_builder, "FileExtensionField"));
   char file_name[50], file_extension[50];
   strcpy(file_name, gtk_entry_get_text(GTK_ENTRY(fileNameEntry)));
   strcpy(file_extension, gtk_entry_get_text(GTK_ENTRY(fileExtensionEntry)));
   if (exist(file_name, file_extension) == 0) {
-    create_file(file_name, file_extension);
-    GtkWidget *window =
-        GTK_WIDGET(gtk_builder_get_object(builder, "InfoCreate"));
-    gtk_window_close(GTK_WINDOW(window));
+    GtkListBox *filelist =
+        GTK_LIST_BOX(gtk_builder_get_object(globalbuilder, "ListFIle"));
+    create_file(file_name, file_extension, filelist);
     gtk_main_quit();
   }
 }
-void create_file_gtk(GtkButton *button, gpointer user_data) {
-  GtkBuilder *create_builder = gtk_builder_new();
+void create_file_gtk(GtkButton *button) {
+  g_object_unref(create_builder);
+  create_builder = gtk_builder_new();
   gtk_builder_add_from_file(create_builder, "fillCreate.glade", NULL);
   GtkWidget *window =
       GTK_WIDGET(gtk_builder_get_object(create_builder, "InfoCreate"));
@@ -295,7 +280,7 @@ void create_file_gtk(GtkButton *button, gpointer user_data) {
   GtkWidget *ConfirmCreateButton =
       GTK_WIDGET(gtk_builder_get_object(create_builder, "ConfirmCreateButton"));
   g_signal_connect(ConfirmCreateButton, "clicked",
-                   G_CALLBACK(retrieve_input_file_name), create_builder);
+                   G_CALLBACK(retrieve_input_file_name), NULL);
   gtk_main();
 }
 
@@ -303,26 +288,26 @@ int main(int argc, char *argv[]) {
   // Initialize GTK
   gtk_init(&argc, &argv);
 
-  // Create a new GtkBuilder
-  GtkBuilder *builder = gtk_builder_new();
+  globalbuilder = gtk_builder_new();
+  create_builder = gtk_builder_new();
 
   // Load the UI definition from file
-  gtk_builder_add_from_file(builder, "design5.glade", NULL);
-
+  gtk_builder_add_from_file(globalbuilder, "design5.glade", NULL);
+  gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
   // Get the main window
-  GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "MyWindow"));
+  GtkWidget *window =
+      GTK_WIDGET(gtk_builder_get_object(globalbuilder, "MyWindow"));
   GtkWidget *CreateButton =
-      GTK_WIDGET(gtk_builder_get_object(builder, "CreateButton"));
+      GTK_WIDGET(gtk_builder_get_object(globalbuilder, "CreateButton"));
   g_signal_connect(CreateButton, "clicked", G_CALLBACK(create_file_gtk), NULL);
+  // Connect the destroy signal to exit the application
+  g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
   // Show the window
   gtk_widget_show_all(window);
 
-  // Run the GTK main loop
+  // Start the GTK main loop
   gtk_main();
-
-  // Clean up
-  g_object_unref(builder);
 
   return 0;
 }
