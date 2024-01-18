@@ -6,6 +6,8 @@
 
 GtkBuilder *globalbuilder;
 GtkBuilder *create_builder;
+GtkBuilder *FileExist_builder;
+GtkWidget *FileWindow;
 
 typedef struct Etudiant {
   char matricule[13];
@@ -255,7 +257,11 @@ void create_file(char *name, char *file_extension, GtkListBox *listfile) {
   gtk_widget_show_all(GTK_WIDGET(listfile));
   free(Full_file_name);
 }
+
+void create_file_gtk(GtkButton *button);
 void retrieve_input_file_name(GtkButton *button) {
+  GtkWidget *window =
+      GTK_WIDGET(gtk_builder_get_object(create_builder, "InfoCreate"));
   GtkWidget *fileNameEntry =
       GTK_WIDGET(gtk_builder_get_object(create_builder, "FileNameField"));
   GtkWidget *fileExtensionEntry =
@@ -263,14 +269,29 @@ void retrieve_input_file_name(GtkButton *button) {
   char file_name[50], file_extension[50];
   strcpy(file_name, gtk_entry_get_text(GTK_ENTRY(fileNameEntry)));
   strcpy(file_extension, gtk_entry_get_text(GTK_ENTRY(fileExtensionEntry)));
+
   if (exist(file_name, file_extension) == 0) {
     GtkListBox *filelist =
         GTK_LIST_BOX(gtk_builder_get_object(globalbuilder, "ListFIle"));
     create_file(file_name, file_extension, filelist);
-    gtk_main_quit();
+    gtk_widget_destroy(window);
+  } else {
+    gtk_widget_destroy(window);
+    g_object_unref(FileExist_builder);
+    FileExist_builder = gtk_builder_new();
+    gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
+    FileWindow =
+        GTK_WIDGET(gtk_builder_get_object(FileExist_builder, "FileWindow"));
+    gtk_widget_show_all(FileWindow);
+    GtkWidget *RetryButton =
+        GTK_WIDGET(gtk_builder_get_object(FileExist_builder, "RetryButton"));
+    g_signal_connect(RetryButton, "clicked", G_CALLBACK(create_file_gtk), NULL);
   }
 }
 void create_file_gtk(GtkButton *button) {
+  if (FileWindow != NULL && gtk_widget_get_visible(FileWindow)) {
+    gtk_widget_destroy(FileWindow);
+  }
   g_object_unref(create_builder);
   create_builder = gtk_builder_new();
   gtk_builder_add_from_file(create_builder, "fillCreate.glade", NULL);
@@ -281,7 +302,7 @@ void create_file_gtk(GtkButton *button) {
       GTK_WIDGET(gtk_builder_get_object(create_builder, "ConfirmCreateButton"));
   g_signal_connect(ConfirmCreateButton, "clicked",
                    G_CALLBACK(retrieve_input_file_name), NULL);
-  gtk_main();
+  // gtk_main();
 }
 
 int main(int argc, char *argv[]) {
@@ -290,10 +311,12 @@ int main(int argc, char *argv[]) {
 
   globalbuilder = gtk_builder_new();
   create_builder = gtk_builder_new();
+  FileExist_builder = gtk_builder_new();
 
   // Load the UI definition from file
   gtk_builder_add_from_file(globalbuilder, "design5.glade", NULL);
   gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
+  gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
   // Get the main window
   GtkWidget *window =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "MyWindow"));
