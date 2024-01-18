@@ -9,6 +9,10 @@ GtkBuilder *create_builder;
 GtkBuilder *FileExist_builder;
 GtkWidget *FileWindow;
 
+typedef struct config_path {
+  char path[50];
+} config_path;
+
 typedef struct Etudiant {
   char matricule[13];
   char nom[50];
@@ -35,6 +39,48 @@ void read_element(Etudiant etudiant) {
   printf("preom : %s\n", etudiant.prenom);
   printf("Matricule : %s\n", etudiant.matricule);
   printf("moyenne : %f\n", etudiant.moyenne);
+}
+void write_config(char *Full_file_name) {
+  config_path file_path;
+  strcpy(file_path.path, Full_file_name);
+  FILE *file = fopen("config.bin", "r+b");
+  fseek(file, 0, SEEK_END);
+  fwrite(&file_path, sizeof(config_path), 1, file);
+  fseek(file, 0, SEEK_SET);
+  file_header header;
+  fread(&header, sizeof(file_header), 1, file);
+  ++header.nb_element;
+  fseek(file, 0, SEEK_SET);
+  fwrite(&header, sizeof(file_header), 1, file);
+  fclose(file);
+}
+
+void read_config(GtkListBox *listfile) {
+  FILE *file = fopen("config.bin", "rb");
+  file_header header;
+  fread(&header, sizeof(file_header), 1, file);
+  config_path T[header.nb_element];
+  fread(T, sizeof(config_path), header.nb_element, file);
+  fclose(file);
+  for (int i = 0; i < header.nb_element; i++) {
+    GtkWidget *newButton = gtk_button_new_with_label(T[i].path);
+    GtkWidget *row = gtk_list_box_row_new();
+    gtk_container_add(GTK_CONTAINER(row), newButton);
+    gtk_list_box_insert(listfile, row, -1);
+  }
+}
+
+bool IsEmpty(char *file_path) {
+  FILE *file = fopen(file_path, "rb");
+  file_header header;
+  fread(&header, sizeof(file_header), 1, file);
+  fclose(file);
+  if (header.nb_element == 0) {
+    return true;
+
+  } else {
+    return false;
+  }
 }
 
 void insertion_block(char *file_path, void *T, int facteur_blockage,
@@ -255,6 +301,7 @@ void create_file(char *name, char *file_extension, GtkListBox *listfile) {
   // Add the button to the ListBox
   gtk_list_box_insert(listfile, row, -1); // Use 'row' instead of 'newButton'
   gtk_widget_show_all(GTK_WIDGET(listfile));
+  write_config(Full_file_name);
   free(Full_file_name);
 }
 
@@ -323,6 +370,11 @@ int main(int argc, char *argv[]) {
   GtkWidget *CreateButton =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "CreateButton"));
   g_signal_connect(CreateButton, "clicked", G_CALLBACK(create_file_gtk), NULL);
+  GtkListBox *listfile =
+      GTK_LIST_BOX(gtk_builder_get_object(globalbuilder, "ListFIle"));
+  if (IsEmpty("config.bin") == false) {
+    read_config(listfile);
+  }
   // Connect the destroy signal to exit the application
   g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
