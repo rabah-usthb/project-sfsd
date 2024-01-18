@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkWindow" id="DeleteWindow">
+    <property name="can-focus">False</property>
+    <property name="resizable">False</property>
+    <property name="window-position">center</property>
+    <property name="default-width">620</property>
+    <property name="default-height">480</property>
+    <property name="gravity">center</property>
+    <child>
+      <object class="GtkFixed">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="width-request">100</property>
+            <property name="height-request">80</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="label" translatable="yes">Matricule :</property>
+            <attributes>
+              <attribute name="size" value="18446"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="x">253</property>
+            <property name="y">54</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkEntry" id="MatriculeField">
+            <property name="width-request">100</property>
+            <property name="height-request">68</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="width-chars">48</property>
+          </object>
+          <packing>
+            <property name="x">95</property>
+            <property name="y">217</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="ConfirmButton">
+            <property name="label" translatable="yes">Confirm</property>
+            <property name="width-request">107</property>
+            <property name="height-request">64</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">495</property>
+            <property name="y">428</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>
