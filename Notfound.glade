@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <object class="GtkWindow" id="NotfoundWindow">
+  <object class="GtkWindow" id="NotFoundWindow">
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="window-position">center-always</property>
@@ -26,7 +26,21 @@
           </object>
           <packing>
             <property name="x">142</property>
-            <property name="y">89</property>
+            <property name="y">74</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="RetryButton">
+            <property name="label" translatable="yes">Retry</property>
+            <property name="width-request">100</property>
+            <property name="height-request">59</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+          </object>
+          <packing>
+            <property name="x">171</property>
+            <property name="y">165</property>
           </packing>
         </child>
       </object>
