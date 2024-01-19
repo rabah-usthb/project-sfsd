@@ -40,6 +40,9 @@ void read_element(Etudiant etudiant) {
   printf("Matricule : %s\n", etudiant.matricule);
   printf("moyenne : %f\n", etudiant.moyenne);
 }
+
+void read_file(GtkButton *button, gpointer user_data);
+
 void write_config(char *Full_file_name) {
   config_path file_path;
   strcpy(file_path.path, Full_file_name);
@@ -64,12 +67,12 @@ void read_config(GtkListBox *listfile) {
   fclose(file);
   for (int i = 0; i < header.nb_element; i++) {
     GtkWidget *newButton = gtk_button_new_with_label(T[i].path);
+    g_signal_connect(newButton, "clicked", G_CALLBACK(read_file), NULL);
     GtkWidget *row = gtk_list_box_row_new();
     gtk_container_add(GTK_CONTAINER(row), newButton);
     gtk_list_box_insert(listfile, row, -1);
   }
 }
-
 bool IsEmpty(char *file_path) {
   FILE *file = fopen(file_path, "rb");
   file_header header;
@@ -125,37 +128,83 @@ void insertion_block(char *file_path, void *T, int facteur_blockage,
   fclose(file);
 }
 
-void read_file(char *file_path) {
+void read_file(GtkButton *button, gpointer user_data) {
+  char *file_path = g_strdup(gtk_button_get_label(button));
   FILE *file = fopen(file_path, "rb");
   file_header header_file;
   fread(&header_file, sizeof(file_header), 1, file);
-  Etudiant T[header_file.nb_element];
-  block_header header_block;
-  int i = 0;
-  while (fread(&header_block, sizeof(block_header), 1, file) > 0) {
-    if (header_block.real_nb_block_element != 0) {
-      fread(T + i, sizeof(Etudiant), header_block.real_nb_block_element, file);
-      i = i + header_block.real_nb_block_element;
-      if (header_block.facteur_blockage != header_block.real_nb_block_element) {
 
-        fseek(file,
-              (header_block.facteur_blockage -
-               header_block.real_nb_block_element) *
-                  sizeof(Etudiant),
-              SEEK_CUR);
-      }
-    } else {
+  GtkTextView *textView =
+      GTK_TEXT_VIEW(gtk_builder_get_object(globalbuilder, "FileContent"));
+  GtkTextBuffer *buffer = gtk_text_view_get_buffer(textView);
+  gtk_text_buffer_set_text(buffer, "", -1);
 
-      fseek(file, sizeof(Etudiant) * header_block.facteur_blockage, SEEK_CUR);
-    }
+  // Set font size and family (use a monospaced font)
+  PangoFontDescription *font_desc = pango_font_description_new();
+  pango_font_description_set_size(font_desc, 15 * PANGO_SCALE);
+  pango_font_description_set_family(font_desc, "Monospace");
+
+  GtkTextTagTable *tag_table = gtk_text_buffer_get_tag_table(buffer);
+
+  // Check if the tag already exists
+  GtkTextTag *tag = gtk_text_tag_table_lookup(tag_table, "my_tag");
+  if (!tag) {
+    tag = gtk_text_buffer_create_tag(buffer, "my_tag", "font-desc", font_desc,
+                                     NULL);
   }
 
-  for (int j = 0; j < header_file.nb_element; j++)
-    read_element(T[j]);
+  // Set wrap mode to none
+  gtk_text_view_set_wrap_mode(textView, GTK_WRAP_NONE);
 
+  if (header_file.nb_element != 0) {
+    Etudiant Tab[header_file.nb_element];
+    block_header header_block;
+    int i = 0;
+    while (fread(&header_block, sizeof(block_header), 1, file) > 0) {
+      if (header_block.real_nb_block_element != 0) {
+        fread(Tab + i, sizeof(Etudiant), header_block.real_nb_block_element,
+              file);
+        i = i + header_block.real_nb_block_element;
+        if (header_block.facteur_blockage !=
+            header_block.real_nb_block_element) {
+          fseek(file,
+                (header_block.facteur_blockage -
+                 header_block.real_nb_block_element) *
+                    sizeof(Etudiant),
+                SEEK_CUR);
+        }
+      } else {
+        fseek(file, sizeof(Etudiant) * header_block.facteur_blockage, SEEK_CUR);
+      }
+    }
+
+    // Append the file content to the GtkTextView with the specified tag
+    for (int j = 0; j < header_file.nb_element; j++) {
+      gchar *text = g_strdup_printf(
+          "Nom: %s Prenom: %s Matricule: %s Moyenne: %f\n", Tab[j].nom,
+          Tab[j].prenom, Tab[j].matricule, Tab[j].moyenne);
+
+      GtkTextIter iter;
+      gtk_text_buffer_get_end_iter(buffer, &iter);
+      gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, text, -1,
+                                               "my_tag", NULL);
+
+      g_free(text);
+    }
+  } else {
+    // If the file is empty, insert a message with the specified font
+    gchar *empty_text = g_strdup_printf("File is empty.\n");
+    GtkTextIter iter;
+    gtk_text_buffer_get_end_iter(buffer, &iter);
+    gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, empty_text, -1,
+                                             "my_tag", NULL);
+    g_free(empty_text);
+  }
+
+  pango_font_description_free(font_desc);
+  free(file_path);
   fclose(file);
 }
-
 void search(char *file_path, char *mat) {
   FILE *file = fopen(file_path, "rb");
   file_header header_file;
@@ -296,6 +345,7 @@ void create_file(char *name, char *file_extension, GtkListBox *listfile) {
 
   // Create a new button
   GtkWidget *newButton = gtk_button_new_with_label(Full_file_name);
+  g_signal_connect(newButton, "clicked", G_CALLBACK(read_file), NULL);
   GtkWidget *row = gtk_list_box_row_new();
   gtk_container_add(GTK_CONTAINER(row), newButton);
   // Add the button to the ListBox
@@ -361,7 +411,7 @@ int main(int argc, char *argv[]) {
   FileExist_builder = gtk_builder_new();
 
   // Load the UI definition from file
-  gtk_builder_add_from_file(globalbuilder, "design5.glade", NULL);
+  gtk_builder_add_from_file(globalbuilder, "design.glade", NULL);
   gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
   gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
   // Get the main window
