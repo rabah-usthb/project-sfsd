@@ -321,7 +321,9 @@ void search_gtk(GtkButton *button) {
 
 void read_file(GtkButton *button, gpointer user_data) {
   char *file_path = g_strdup(gtk_button_get_label(button));
-  FILE *file = fopen(file_path, "rb");
+  strcpy(globale_path, "user_files/");
+  strcat(globale_path, file_path);
+  FILE *file = fopen(globale_path, "rb");
   file_header header_file;
   fread(&header_file, sizeof(file_header), 1, file);
   GtkTextView *textView =
@@ -575,11 +577,8 @@ int supprimer(char *file_path, char *mat) {
   return found;
 }
 
-int exist(char *file_name, char *file_extension) {
-  char *full_name = malloc(strlen(file_extension) + strlen(file_name) + 1);
-  strcpy(full_name, file_name);
-  strcat(full_name, file_extension);
-  FILE *file = fopen(full_name, "rb");
+int exist(char *file_path) {
+  FILE *file = fopen(file_path, "rb");
   if (file == NULL) {
     return 0;
   } else {
@@ -628,8 +627,10 @@ void retrieve_input_file_name(GtkButton *button) {
   char file_name[50], file_extension[50];
   strcpy(file_name, gtk_entry_get_text(GTK_ENTRY(fileNameEntry)));
   strcpy(file_extension, gtk_entry_get_text(GTK_ENTRY(fileExtensionEntry)));
-
-  if (exist(file_name, file_extension) == 0) {
+  strcpy(globale_path, "user_files/");
+  strcat(globale_path, file_name);
+  strcat(globale_path, file_extension);
+  if (exist(globale_path) == 0) {
     GtkListBox *filelist =
         GTK_LIST_BOX(gtk_builder_get_object(globalbuilder, "ListFIle"));
     create_file(file_name, file_extension, filelist);
