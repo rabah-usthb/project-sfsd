@@ -545,12 +545,19 @@ int supprimer(char *file_path, char *mat) {
         --cx;
         ++j;
       }
-    } else {
-      fseek(file, sizeof(Etudiant) * block.facteur_blockage, SEEK_CUR);
+      i = i + block.real_nb_block_element;
+
+      if (block.real_nb_block_element != block.facteur_blockage) {
+        int empty = block.facteur_blockage - block.real_nb_block_element;
+        fseek(file, sizeof(Etudiant) * (empty), SEEK_CUR);
+      }
     }
 
-    i = i + block.real_nb_block_element;
+    else {
+      fseek(file, sizeof(Etudiant) * block.facteur_blockage, SEEK_CUR);
+    }
   }
+
   if (found == 1) {
     fseek(file, 0, SEEK_END);
     --header.nb_element;
@@ -558,6 +565,7 @@ int supprimer(char *file_path, char *mat) {
     fseek(file, 0, SEEK_SET);
     fwrite(&header, sizeof(file_header), 1, file);
   }
+
   fclose(file);
 
   return found;
