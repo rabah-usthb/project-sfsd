@@ -7,8 +7,15 @@
 GtkBuilder *globalbuilder;
 GtkBuilder *create_builder;
 GtkBuilder *FileExist_builder;
+GtkBuilder *insertionBuilder;
 GtkWidget *FileWindow;
-
+GtkBuilder *insertioninputBuilder;
+GtkBuilder *facteur_builder;
+GtkWidget *FacteurWindow;
+int facteur;
+int nb_element;
+int current_student;
+char globale_path[50];
 typedef struct config_path {
   char path[50];
 } config_path;
@@ -19,7 +26,7 @@ typedef struct Etudiant {
   char prenom[50];
   float moyenne;
 } Etudiant;
-
+Etudiant *T;
 typedef struct file_header {
   size_t file_size;
   char file_name[50];
@@ -128,6 +135,113 @@ void insertion_block(char *file_path, void *T, int facteur_blockage,
   fclose(file);
 }
 
+void retrieve_student(GtkButton *button, gpointer user_data) {
+  GtkEntry *matriculeEntry =
+      GTK_ENTRY(gtk_builder_get_object(insertionBuilder, "MatriculeField"));
+  GtkEntry *nomEntry =
+      GTK_ENTRY(gtk_builder_get_object(insertionBuilder, "LastNameField"));
+  GtkEntry *prenomEntry =
+      GTK_ENTRY(gtk_builder_get_object(insertionBuilder, "FirstNameField"));
+  GtkEntry *gradeEntry =
+      GTK_ENTRY(gtk_builder_get_object(insertionBuilder, "GradeField"));
+
+  if (current_student < nb_element) {
+    strcpy(T[current_student].matricule,
+           gtk_entry_get_text(GTK_ENTRY(matriculeEntry)));
+    strcpy(T[current_student].nom, gtk_entry_get_text(GTK_ENTRY(nomEntry)));
+    strcpy(T[current_student].prenom,
+           gtk_entry_get_text(GTK_ENTRY(prenomEntry)));
+    T[current_student].moyenne =
+        atof(gtk_entry_get_text(GTK_ENTRY(gradeEntry)));
+    read_element(T[current_student]);
+    ++current_student;
+
+    gtk_entry_set_text(matriculeEntry, "");
+    gtk_entry_set_text(prenomEntry, "");
+    gtk_entry_set_text(nomEntry, "");
+    gtk_entry_set_text(gradeEntry, "");
+
+    GtkWidget *label =
+        GTK_WIDGET(gtk_builder_get_object(insertionBuilder, "student"));
+    char label_text[50];
+    sprintf(label_text, "Student %d", current_student + 1);
+    gtk_label_set_text(GTK_LABEL(label), label_text);
+  }
+
+  if (current_student == nb_element) {
+    GtkWidget *windowstudent =
+        GTK_WIDGET(gtk_builder_get_object(insertionBuilder, "StudentWindow"));
+    gtk_window_close(GTK_WINDOW(windowstudent));
+    insertion_block(globale_path, (Etudiant *)T, facteur, sizeof(Etudiant),
+                    nb_element);
+    free(T);
+  }
+}
+
+void insertion_gtk(GtkButton *button, gpointer user_data);
+
+void retrieve_insertion(GtkButton *button, gpointer user_data) {
+  GtkEntry *nbfield =
+      GTK_ENTRY(gtk_builder_get_object(insertioninputBuilder, "NbField"));
+  nb_element = atoi(gtk_entry_get_text(nbfield));
+  GtkEntry *facteurfield =
+      GTK_ENTRY(gtk_builder_get_object(insertioninputBuilder, "FacteurField"));
+  facteur = atoi(gtk_entry_get_text(facteurfield));
+  GtkWidget *window = GTK_WIDGET(
+      gtk_builder_get_object(insertioninputBuilder, "InsertionWindow"));
+  gtk_window_close(GTK_WINDOW(window));
+  if (facteur <= nb_element) {
+    g_object_unref(insertionBuilder);
+    insertionBuilder = gtk_builder_new();
+    gtk_builder_add_from_file(insertionBuilder, "insertion.glade", NULL);
+    GtkWidget *windowstudent =
+        GTK_WIDGET(gtk_builder_get_object(insertionBuilder, "StudentWindow"));
+    T = (Etudiant *)malloc(sizeof(Etudiant) * nb_element);
+    GtkWidget *label =
+        GTK_WIDGET(gtk_builder_get_object(insertionBuilder, "student"));
+    current_student = 0;
+    char label_text[50];
+    sprintf(label_text, "Student %d", current_student + 1);
+    gtk_label_set_text(GTK_LABEL(label), label_text);
+    gtk_widget_show_all(windowstudent);
+    GtkWidget *confirmbutton =
+        GTK_WIDGET(gtk_builder_get_object(insertionBuilder, "ConfirmButton"));
+    g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_student),
+                     NULL);
+  } else {
+    g_object_unref(facteur_builder);
+    facteur_builder = gtk_builder_new();
+    gtk_builder_add_from_file(facteur_builder, "Facteur.glade", NULL);
+    FacteurWindow =
+        GTK_WIDGET(gtk_builder_get_object(facteur_builder, "FileWindow"));
+    gtk_widget_show_all(FacteurWindow);
+    GtkWidget *RetryButton =
+        GTK_WIDGET(gtk_builder_get_object(facteur_builder, "RetryButton"));
+    g_signal_connect(RetryButton, "clicked", G_CALLBACK(insertion_gtk), NULL);
+  }
+}
+
+void insertion_gtk(GtkButton *button, gpointer user_data) {
+
+  if (FacteurWindow != NULL && gtk_widget_get_visible(FacteurWindow)) {
+    gtk_widget_destroy(FacteurWindow);
+  }
+
+  g_signal_handlers_disconnect_by_func(button, G_CALLBACK(retrieve_insertion),
+                                       NULL);
+  g_object_unref(insertioninputBuilder);
+  insertioninputBuilder = gtk_builder_new();
+  gtk_builder_add_from_file(insertioninputBuilder, "insertioninput.glade",
+                            NULL);
+  GtkWidget *window = GTK_WIDGET(
+      gtk_builder_get_object(insertioninputBuilder, "InsertionWindow"));
+  gtk_widget_show_all(window);
+  GtkWidget *confirmbutton = GTK_WIDGET(
+      gtk_builder_get_object(insertioninputBuilder, "ConfirmButton"));
+  g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_insertion),
+                   NULL);
+}
+
 void read_file(GtkButton *button, gpointer user_data) {
   char *file_path = g_strdup(gtk_button_get_label(button));
   FILE *file = fopen(file_path, "rb");
@@ -181,7 +295,7 @@ void read_file(GtkButton *button, gpointer user_data) {
     // Append the file content to the GtkTextView with the specified tag
     for (int j = 0; j < header_file.nb_element; j++) {
       gchar *text = g_strdup_printf(
-          "Nom: %s Prenom: %s Matricule: %s Moyenne: %f\n", Tab[j].nom,
+          "Nom: %s Prenom: %s Matricule: %s Moyenne: %.2f\n", Tab[j].nom,
           Tab[j].prenom, Tab[j].matricule, Tab[j].moyenne);
 
       GtkTextIter iter;
@@ -202,7 +316,13 @@ void read_file(GtkButton *button, gpointer user_data) {
   }
 
   pango_font_description_free(font_desc);
+  strcpy(globale_path, file_path);
   free(file_path);
+  GtkWidget *InsertionButton =
+      GTK_WIDGET(gtk_builder_get_object(globalbuilder, "InsertionButton"));
+  g_signal_handlers_disconnect_by_func(InsertionButton,
+                                       G_CALLBACK(insertion_gtk), NULL);
+  g_signal_connect(InsertionButton, "clicked", G_CALLBACK(insertion_gtk), NULL);
   fclose(file);
 }
 void search(char *file_path, char *mat) {
@@ -409,11 +529,19 @@ int main(int argc, char *argv[]) {
   globalbuilder = gtk_builder_new();
   create_builder = gtk_builder_new();
   FileExist_builder = gtk_builder_new();
+  insertioninputBuilder = gtk_builder_new();
+  insertionBuilder = gtk_builder_new();
+  facteur_builder = gtk_builder_new();
 
   // Load the UI definition from file
   gtk_builder_add_from_file(globalbuilder, "design.glade", NULL);
   gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
   gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
+  gtk_builder_add_from_file(insertioninputBuilder, "insertioninput.glade",
+                            NULL);
+  gtk_builder_add_from_file(insertionBuilder, "insertion.glade", NULL);
+  gtk_builder_add_from_file(facteur_builder, "Facteur.glade", NULL);
+
   // Get the main window
   GtkWidget *window =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "MyWindow"));
