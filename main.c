@@ -16,6 +16,7 @@ GtkWidget *FacteurWindow;
 GtkBuilder *matricule_builder;
 GtkBuilder *notfound_builder;
 GtkBuilder *found_builder;
+GtkBuilder *success_builder;
 int facteur;
 int nb_element;
 int current_student;
@@ -88,6 +89,53 @@ bool IsEmpty(char *file_path) {
   } else {
     return false;
   }
+}
+
+int supprimer(char *file_path, char *mat);
+
+void Delete_gtk(GtkButton *button, gpointer user_data);
+
+void retrieve_delete(GtkButton *button, gpointer user_data) {
+  GtkEntry *matriculeEntry =
+      GTK_ENTRY(gtk_builder_get_object(matricule_builder, "MatriculeField"));
+  char matricule[50];
+  strcpy(matricule, gtk_entry_get_text(GTK_ENTRY(matriculeEntry)));
+  GtkWidget *windowdelete =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "MatriculeWindow"));
+  gtk_window_close(GTK_WINDOW(windowdelete));
+  if (supprimer(globale_path, matricule) == 1) {
+    g_object_unref(success_builder);
+    success_builder = gtk_builder_new();
+    gtk_builder_add_from_file(success_builder, "Successfull.glade", NULL);
+    GtkWidget *successwindow =
+        GTK_WIDGET(gtk_builder_get_object(success_builder, "SuccessWindow"));
+    gtk_widget_show_all(successwindow);
+  } else {
+    g_object_unref(notfound_builder);
+    notfound_builder = gtk_builder_new();
+    gtk_builder_add_from_file(notfound_builder, "Notfound.glade", NULL);
+    NotFoundWindow =
+        GTK_WIDGET(gtk_builder_get_object(notfound_builder, "NotFoundWindow"));
+    GtkWidget *RetryButton =
+        GTK_WIDGET(gtk_builder_get_object(notfound_builder, "RetryButton"));
+    g_signal_connect(RetryButton, "clicked", G_CALLBACK(Delete_gtk), NULL);
+    gtk_widget_show_all(NotFoundWindow);
+  }
+}
+
+void Delete_gtk(GtkButton *button, gpointer user_data) {
+  if (NotFoundWindow != NULL && gtk_widget_get_visible(NotFoundWindow)) {
+    gtk_widget_destroy(NotFoundWindow);
+  }
+  g_object_unref(matricule_builder);
+  matricule_builder = gtk_builder_new();
+  gtk_builder_add_from_file(matricule_builder, "matriculeinput.glade", NULL);
+  GtkWidget *window =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "MatriculeWindow"));
+  gtk_widget_show_all(window);
+  GtkWidget *confirmbutton =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "ConfirmButton"));
+  g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_delete), NULL);
 }
 
 void insertion_block(char *file_path, void *T, int facteur_blockage,
@@ -344,15 +392,19 @@ void read_file(GtkButton *button, gpointer user_data) {
   free(file_path);
   GtkWidget *InsertionButton =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "InsertionButton"));
+  GtkWidget *DeleteButton =
+      GTK_WIDGET(gtk_builder_get_object(globalbuilder, "DeleteButton"));
   GtkWidget *SearchButton =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "SearchButton"));
   g_signal_handlers_disconnect_by_func(SearchButton, G_CALLBACK(search_gtk),
                                        NULL);
   g_signal_handlers_disconnect_by_func(InsertionButton,
                                        G_CALLBACK(insertion_gtk), NULL);
+  g_signal_handlers_disconnect_by_func(DeleteButton, G_CALLBACK(Delete_gtk),
+                                       NULL);
   g_signal_connect(InsertionButton, "clicked", G_CALLBACK(insertion_gtk), NULL);
   g_signal_connect(SearchButton, "clicked", G_CALLBACK(search_gtk), NULL);
-
+  g_signal_connect(DeleteButton, "clicked", G_CALLBACK(Delete_gtk), NULL);
   fclose(file);
 }
 void search(char *file_path, char *mat) {
@@ -440,7 +492,7 @@ void search(char *file_path, char *mat) {
   fclose(file);
 }
 
-void supprimer(char *file_path, char *mat) {
+int supprimer(char *file_path, char *mat) {
   FILE *file = fopen(file_path, "r+b");
   file_header header;
   block_header block;
@@ -499,12 +551,16 @@ void supprimer(char *file_path, char *mat) {
 
     i = i + block.real_nb_block_element;
   }
-  fseek(file, 0, SEEK_END);
-  --header.nb_element;
-  header.file_size = ftell(file);
-  fseek(file, 0, SEEK_SET);
-  fwrite(&header, sizeof(file_header), 1, file);
+  if (found == 1) {
+    fseek(file, 0, SEEK_END);
+    --header.nb_element;
+    header.file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    fwrite(&header, sizeof(file_header), 1, file);
+  }
   fclose(file);
+
+  return found;
 }
 
 int exist(char *file_name, char *file_extension) {
@@ -608,9 +664,10 @@ int main(int argc, char *argv[]) {
   matricule_builder = gtk_builder_new();
   notfound_builder = gtk_builder_new();
   found_builder = gtk_builder_new();
+  success_builder = gtk_builder_new();
 
   // Load the UI definition from file
-  gtk_builder_add_from_file(globalbuilder, "design5.glade", NULL);
+  gtk_builder_add_from_file(globalbuilder, "design.glade", NULL);
   gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
   gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
   gtk_builder_add_from_file(insertioninputBuilder, "insertioninput.glade",
@@ -620,6 +677,7 @@ int main(int argc, char *argv[]) {
   gtk_builder_add_from_file(matricule_builder, "matriculeinput.glade", NULL);
   gtk_builder_add_from_file(notfound_builder, "Notfound.glade", NULL);
   gtk_builder_add_from_file(found_builder, "Student.glade", NULL);
+  gtk_builder_add_from_file(success_builder, "Successfull.glade", NULL);
   // Get the main window
   GtkWidget *window =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "MyWindow"));
