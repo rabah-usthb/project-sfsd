@@ -243,6 +243,7 @@
                   <object class="GtkTextView" id="FileContent">
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
+                    <property name="editable">False</property>
                   </object>
                 </child>
               </object>
@@ -272,4 +273,3 @@
     </child>
   </object>
 </interface>
-
