@@ -20,7 +20,7 @@ GtkBuilder *success_builder;
 int facteur;
 int nb_element;
 int current_student;
-char globale_path[50];
+char globale_path[100];
 typedef struct config_path {
   char path[50];
 } config_path;
@@ -324,19 +324,15 @@ void read_file(GtkButton *button, gpointer user_data) {
   FILE *file = fopen(file_path, "rb");
   file_header header_file;
   fread(&header_file, sizeof(file_header), 1, file);
-
   GtkTextView *textView =
       GTK_TEXT_VIEW(gtk_builder_get_object(globalbuilder, "FileContent"));
   GtkTextBuffer *buffer = gtk_text_view_get_buffer(textView);
   gtk_text_buffer_set_text(buffer, "", -1);
-
   // Set font size and family (use a monospaced font)
   PangoFontDescription *font_desc = pango_font_description_new();
   pango_font_description_set_size(font_desc, 15 * PANGO_SCALE);
   pango_font_description_set_family(font_desc, "Monospace");
-
   GtkTextTagTable *tag_table = gtk_text_buffer_get_tag_table(buffer);
-
   // Check if the tag already exists
   GtkTextTag *tag = gtk_text_tag_table_lookup(tag_table, "my_tag");
   if (!tag) {
@@ -393,7 +389,8 @@ void read_file(GtkButton *button, gpointer user_data) {
   }
 
   pango_font_description_free(font_desc);
-  strcpy(globale_path, file_path);
+  strcpy(globale_path, "user_files/");
+  strcat(globale_path, file_path);
   free(file_path);
   GtkWidget *InsertionButton =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "InsertionButton"));
@@ -596,9 +593,10 @@ void create_file(char *name, char *file_extension, GtkListBox *listfile) {
   char *Full_file_name = malloc(strlen(name) + strlen(file_extension) + 1);
   strcpy(Full_file_name, name);
   strcat(Full_file_name, file_extension);
-
+  strcpy(globale_path, "user_files/");
+  strcat(globale_path, Full_file_name);
   // initialisation de l'entete du fichier
-  FILE *file = fopen(Full_file_name, "wb");
+  FILE *file = fopen(globale_path, "wb");
   file_header header;
   strcpy(header.file_name, name);
   strcpy(header.file_extension, file_extension);
