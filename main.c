@@ -9,9 +9,13 @@ GtkBuilder *create_builder;
 GtkBuilder *FileExist_builder;
 GtkBuilder *insertionBuilder;
 GtkWidget *FileWindow;
+GtkWidget *NotFoundWindow;
 GtkBuilder *insertioninputBuilder;
 GtkBuilder *facteur_builder;
 GtkWidget *FacteurWindow;
+GtkBuilder *matricule_builder;
+GtkBuilder *notfound_builder;
+GtkBuilder *found_builder;
 int facteur;
 int nb_element;
 int current_student;
@@ -40,13 +44,6 @@ typedef struct block_header {
   int facteur_blockage;
   char data_type[50];
 } block_header;
-
-void read_element(Etudiant etudiant) {
-  printf("nom : %s\n", etudiant.nom);
-  printf("preom : %s\n", etudiant.prenom);
-  printf("Matricule : %s\n", etudiant.matricule);
-  printf("moyenne : %f\n", etudiant.moyenne);
-}
 
 void read_file(GtkButton *button, gpointer user_data);
 
@@ -153,7 +150,6 @@ void retrieve_student(GtkButton *button, gpointer user_data) {
            gtk_entry_get_text(GTK_ENTRY(prenomEntry)));
     T[current_student].moyenne =
         atof(gtk_entry_get_text(GTK_ENTRY(gradeEntry)));
-    read_element(T[current_student]);
     ++current_student;
 
     gtk_entry_set_text(matriculeEntry, "");
@@ -242,6 +238,34 @@ void insertion_gtk(GtkButton *button, gpointer user_data) {
                    NULL);
 }
 
+void search(char *file_path, char *mat);
+
+void retrieve_search(GtkButton *button) {
+  GtkWidget *window =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "MatriculeWindow"));
+  GtkWidget *MatriculeField =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "MatriculeField"));
+  char mat[50];
+  strcpy(mat, gtk_entry_get_text(GTK_ENTRY(MatriculeField)));
+  gtk_widget_destroy(window);
+  search(globale_path, mat);
+}
+
+void search_gtk(GtkButton *button) {
+  if (NotFoundWindow != NULL && gtk_widget_get_visible(NotFoundWindow)) {
+    gtk_widget_destroy(NotFoundWindow);
+  }
+  g_object_unref(matricule_builder);
+  matricule_builder = gtk_builder_new();
+  gtk_builder_add_from_file(matricule_builder, "matriculeinput.glade", NULL);
+  GtkWidget *window =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "MatriculeWindow"));
+  gtk_widget_show_all(window);
+  GtkWidget *confirmbutton =
+      GTK_WIDGET(gtk_builder_get_object(matricule_builder, "ConfirmButton"));
+  g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_search), NULL);
+}
+
 void read_file(GtkButton *button, gpointer user_data) {
   char *file_path = g_strdup(gtk_button_get_label(button));
   FILE *file = fopen(file_path, "rb");
@@ -320,9 +344,15 @@ void read_file(GtkButton *button, gpointer user_data) {
   free(file_path);
   GtkWidget *InsertionButton =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "InsertionButton"));
+  GtkWidget *SearchButton =
+      GTK_WIDGET(gtk_builder_get_object(globalbuilder, "SearchButton"));
+  g_signal_handlers_disconnect_by_func(SearchButton, G_CALLBACK(search_gtk),
+                                       NULL);
   g_signal_handlers_disconnect_by_func(InsertionButton,
                                        G_CALLBACK(insertion_gtk), NULL);
   g_signal_connect(InsertionButton, "clicked", G_CALLBACK(insertion_gtk), NULL);
+  g_signal_connect(SearchButton, "clicked", G_CALLBACK(search_gtk), NULL);
+
   fclose(file);
 }
 void search(char *file_path, char *mat) {
@@ -342,7 +372,42 @@ void search(char *file_path, char *mat) {
       j = i;
       while (cx > 0) {
         if (strcmp(T[j].matricule, mat) == 0) {
-          read_element(T[j]);
+          g_object_unref(found_builder);
+          found_builder = gtk_builder_new();
+          gtk_builder_add_from_file(found_builder, "Student.glade", NULL);
+          GtkWidget *FoundWindow =
+              GTK_WIDGET(gtk_builder_get_object(found_builder, "FoundWindow"));
+          gtk_widget_show_all(FoundWindow);
+
+          GtkTextView *textView = GTK_TEXT_VIEW(
+              gtk_builder_get_object(found_builder, "StudentFound"));
+          GtkTextBuffer *buffer = gtk_text_view_get_buffer(textView);
+          gtk_text_buffer_set_text(buffer, "", -1);
+
+          // Set font size and family (use a monospaced font)
+          PangoFontDescription *font_desc = pango_font_description_new();
+          pango_font_description_set_size(font_desc, 15 * PANGO_SCALE);
+          pango_font_description_set_family(font_desc, "Monospace");
+
+          GtkTextTagTable *tag_table = gtk_text_buffer_get_tag_table(buffer);
+
+          // Check if the tag already exists
+          GtkTextTag *tag = gtk_text_tag_table_lookup(tag_table, "my_tag");
+          if (!tag) {
+            tag = gtk_text_buffer_create_tag(buffer, "my_tag", "font-desc",
+                                             font_desc, NULL);
+          }
+          gchar *text = g_strdup_printf(
+              "Nom: %s\nPrenom: %s \nMatricule: %s \nMoyenne: %.2f\n", T[j].nom,
+              T[j].prenom, T[j].matricule, T[j].moyenne);
+
+          GtkTextIter iter;
+          gtk_text_buffer_get_end_iter(buffer, &iter);
+          gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, text, -1,
+                                                   "my_tag", NULL);
+          g_free(text);
+          pango_font_description_free(font_desc);
+
           found = 1;
           break;
         }
@@ -362,7 +427,15 @@ void search(char *file_path, char *mat) {
   }
 
   if (found == 0) {
-    printf("\nNot Found\n");
+    g_object_unref(notfound_builder);
+    notfound_builder = gtk_builder_new();
+    gtk_builder_add_from_file(notfound_builder, "Notfound.glade", NULL);
+    NotFoundWindow =
+        GTK_WIDGET(gtk_builder_get_object(notfound_builder, "NotFoundWindow"));
+    GtkWidget *RetryButton =
+        GTK_WIDGET(gtk_builder_get_object(notfound_builder, "RetryButton"));
+    g_signal_connect(RetryButton, "clicked", G_CALLBACK(search_gtk), NULL);
+    gtk_widget_show_all(NotFoundWindow);
   }
   fclose(file);
 }
@@ -532,16 +605,21 @@ int main(int argc, char *argv[]) {
   insertioninputBuilder = gtk_builder_new();
   insertionBuilder = gtk_builder_new();
   facteur_builder = gtk_builder_new();
+  matricule_builder = gtk_builder_new();
+  notfound_builder = gtk_builder_new();
+  found_builder = gtk_builder_new();
 
   // Load the UI definition from file
-  gtk_builder_add_from_file(globalbuilder, "design.glade", NULL);
+  gtk_builder_add_from_file(globalbuilder, "design5.glade", NULL);
   gtk_builder_add_from_file(create_builder, "fileCreate.glade", NULL);
   gtk_builder_add_from_file(FileExist_builder, "FileExist.glade", NULL);
   gtk_builder_add_from_file(insertioninputBuilder, "insertioninput.glade",
                             NULL);
   gtk_builder_add_from_file(insertionBuilder, "insertion.glade", NULL);
   gtk_builder_add_from_file(facteur_builder, "Facteur.glade", NULL);
-
+  gtk_builder_add_from_file(matricule_builder, "matriculeinput.glade", NULL);
+  gtk_builder_add_from_file(notfound_builder, "Notfound.glade", NULL);
+  gtk_builder_add_from_file(found_builder, "Student.glade", NULL);
   // Get the main window
   GtkWidget *window =
       GTK_WIDGET(gtk_builder_get_object(globalbuilder, "MyWindow"));
