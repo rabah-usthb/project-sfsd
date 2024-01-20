@@ -509,6 +509,7 @@ int supprimer(char *file_path, char *mat) {
   long offset;
   int j;
   int cx;
+          // Recherche du matricule specifie dans les blocs
   while (fread(&block, sizeof(block_header), 1, file) > 0 && found == 0) {
     if (block.real_nb_block_element != 0) {
 
@@ -517,13 +518,16 @@ int supprimer(char *file_path, char *mat) {
                sizeof(Etudiant) * (block.real_nb_block_element);
       j = i;
       cx = block.real_nb_block_element;
+          // Iteration a travers le tableau pour trouver le matricule specifie
       while (cx > 0) {
         if (strcmp(mat, T[j].matricule) == 0) {
           found = 1;
           --block.real_nb_block_element;
+           // Allocation de memoire pour un buffer stockant le bloc modifie
           void *buffer = malloc(sizeof(block_header) +
                                 sizeof(Etudiant) * (block.facteur_blockage));
           memcpy(buffer, &block, sizeof(block_header));
+           // Copie des enregistrements Etudiant, excluant celui supprime
           if (i == j) {
             // memcpy(buffer + sizeof(block_header), T + 9, sizeof(Etudiant));
             memcpy(buffer + sizeof(block_header), T + (i + 1),
@@ -540,7 +544,9 @@ int supprimer(char *file_path, char *mat) {
                    T + j + 1,
                    sizeof(Etudiant) * (block.real_nb_block_element - j));
           }
+         // Deplacement du pointeur de fichier a la position avant le bloc
           fseek(file, -offset, SEEK_CUR);
+         // Ecriture du bloc modifie dans le fichier
           fwrite(buffer,
                  sizeof(block_header) +
                      sizeof(Etudiant) * (block.facteur_blockage),
@@ -552,18 +558,18 @@ int supprimer(char *file_path, char *mat) {
         ++j;
       }
       i = i + block.real_nb_block_element;
-
+        // Deplacement du pointeur de fichier a la fin du bloc s'il n'est pas plein
       if (block.real_nb_block_element != block.facteur_blockage) {
         int empty = block.facteur_blockage - block.real_nb_block_element;
         fseek(file, sizeof(Etudiant) * (empty), SEEK_CUR);
       }
     }
-
+     // Deplacement du pointeur de fichier a la fin du bloc vide
     else {
       fseek(file, sizeof(Etudiant) * block.facteur_blockage, SEEK_CUR);
     }
   }
-
+   // Si une suppression a eu lieu, mise a jour de l'en-tete du fichier
   if (found == 1) {
     fseek(file, 0, SEEK_END);
     --header.nb_element;
