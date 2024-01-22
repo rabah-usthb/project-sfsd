@@ -144,7 +144,7 @@ void Delete_gtk(GtkButton *button, gpointer user_data) {
       GTK_WIDGET(gtk_builder_get_object(matricule_builder, "ConfirmButton"));
   g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_delete), NULL);
 }
-
+// fonction qui insere un bloc dans un fichier 
 void insertion_block(char *file_path, void *T, int facteur_blockage,
                      size_t size_of_element, int n) {
   FILE *file = fopen(file_path, "r+b");
@@ -293,7 +293,6 @@ void insertion_gtk(GtkButton *button, gpointer user_data) {
   g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_insertion),
                    NULL);
 }
-
 void search(char *file_path, char *mat);
 
 void retrieve_search(GtkButton *button) {
@@ -307,6 +306,7 @@ void retrieve_search(GtkButton *button) {
   search(globale_path, mat);
 }
 
+// gtk code Pour la fonction de recherche
 void search_gtk(GtkButton *button) {
   if (NotFoundWindow != NULL && gtk_widget_get_visible(NotFoundWindow)) {
     gtk_widget_destroy(NotFoundWindow);
@@ -415,8 +415,10 @@ void read_file(GtkButton *button, gpointer user_data) {
   g_signal_connect(DeleteButton, "clicked", G_CALLBACK(Delete_gtk), NULL);
   fclose(file);
 }
+//fonction de recherche 
 void search(char *file_path, char *mat) {
   FILE *file = fopen(file_path, "rb");
+    // Lecture de l'en-tete du fichier
   file_header header_file;
   fread(&header_file, sizeof(file_header), 1, file);
   Etudiant T[header_file.nb_element];
@@ -425,17 +427,20 @@ void search(char *file_path, char *mat) {
   int i = 0;
   int cx;
   int j;
+  // Boucle principale pour parcourir les blocs du fichier
   while (fread(&block, sizeof(block_header), 1, file) > 0 && found == 0) {
     if (block.real_nb_block_element != 0) {
       fread(T + i, sizeof(Etudiant), block.real_nb_block_element, file);
       cx = block.real_nb_block_element;
       j = i;
+      // Boucle interne pour parcourir les enregistrements dans le bloc
       while (cx > 0) {
         if (strcmp(T[j].matricule, mat) == 0) {
+          // Creation d'un nouveau constructeur GTK pour la fenetre trouvee
           g_object_unref(found_builder);
           found_builder = gtk_builder_new();
-          gtk_builder_add_from_file(found_builder, "ressource/Student.glade",
-                                    NULL);
+          gtk_builder_add_from_file(found_builder, "ressource/Student.glade", NULL);
+           // Recuperation de la fenetre et affichage
           GtkWidget *FoundWindow =
               GTK_WIDGET(gtk_builder_get_object(found_builder, "FoundWindow"));
           gtk_widget_show_all(FoundWindow);
@@ -461,7 +466,7 @@ void search(char *file_path, char *mat) {
           gchar *text = g_strdup_printf(
               "Nom: %s\nPrenom: %s \nMatricule: %s \nMoyenne: %.2f\n", T[j].nom,
               T[j].prenom, T[j].matricule, T[j].moyenne);
-
+          // Insertion du texte dans le buffer avec le tag associe
           GtkTextIter iter;
           gtk_text_buffer_get_end_iter(buffer, &iter);
           gtk_text_buffer_insert_with_tags_by_name(buffer, &iter, text, -1,
@@ -476,17 +481,18 @@ void search(char *file_path, char *mat) {
         cx--;
       }
       i = i + block.real_nb_block_element;
+       // Verifier si des blocs vides suivent et ajuster la position du curseur de fichier
       if (block.real_nb_block_element != block.facteur_blockage) {
         int empty = block.facteur_blockage - block.real_nb_block_element;
         fseek(file, sizeof(Etudiant) * empty, SEEK_CUR);
       }
     }
-
+    // Si le bloc est vide, deplacer le curseur de fichier
     else {
       fseek(file, sizeof(Etudiant) * (block.facteur_blockage), SEEK_CUR);
     }
   }
-
+  // Si l'etudiant n'a pas ete trouve, afficher une fenetre indiquant qu'il n'a pas ete trouve
   if (found == 0) {
     g_object_unref(notfound_builder);
     notfound_builder = gtk_builder_new();
