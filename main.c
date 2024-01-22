@@ -21,10 +21,12 @@ int facteur;
 int nb_element;
 int current_student;
 char globale_path[100];
+
+//definir le chemin son enregistrement 
 typedef struct config_path {
   char path[50];
 } config_path;
-
+//structure Pour l'etudiant
 typedef struct Etudiant {
   char matricule[13];
   char nom[50];
@@ -32,13 +34,14 @@ typedef struct Etudiant {
   float moyenne;
 } Etudiant;
 Etudiant *T;
+//l'entete de fichier 
 typedef struct file_header {
   size_t file_size;
   char file_name[50];
   char file_extension[20];
   int nb_element;
 } file_header;
-
+//l'entete de bloc
 typedef struct block_header {
   size_t block_size;
   int real_nb_block_element;
@@ -78,6 +81,7 @@ void read_config(GtkListBox *listfile) {
     gtk_list_box_insert(listfile, row, -1);
   }
 }
+//fonction Pour tester l'etat de fichier
 bool IsEmpty(char *file_path) {
   FILE *file = fopen(file_path, "rb");
   file_header header;
