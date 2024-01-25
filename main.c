@@ -22,11 +22,11 @@ int nb_element;
 int current_student;
 char globale_path[100];
 
-//definir le chemin son enregistrement 
+// definir le chemin son enregistrement
 typedef struct config_path {
   char path[50];
 } config_path;
-//structure Pour l'etudiant
+// structure Pour l'etudiant
 typedef struct Etudiant {
   char matricule[13];
   char nom[50];
@@ -34,14 +34,14 @@ typedef struct Etudiant {
   float moyenne;
 } Etudiant;
 Etudiant *T;
-//l'entete de fichier 
+// l'entete de fichier
 typedef struct file_header {
   size_t file_size;
   char file_name[50];
   char file_extension[20];
   int nb_element;
 } file_header;
-//l'entete de bloc
+// l'entete de bloc
 typedef struct block_header {
   size_t block_size;
   int real_nb_block_element;
@@ -81,7 +81,7 @@ void read_config(GtkListBox *listfile) {
     gtk_list_box_insert(listfile, row, -1);
   }
 }
-//fonction Pour tester l'etat de fichier
+// fonction Pour tester l'etat de fichier
 bool IsEmpty(char *file_path) {
   FILE *file = fopen(file_path, "rb");
   file_header header;
@@ -144,7 +144,7 @@ void Delete_gtk(GtkButton *button, gpointer user_data) {
       GTK_WIDGET(gtk_builder_get_object(matricule_builder, "ConfirmButton"));
   g_signal_connect(confirmbutton, "clicked", G_CALLBACK(retrieve_delete), NULL);
 }
-// fonction qui insere un bloc dans un fichier 
+// fonction qui insere un bloc dans un fichier
 void insertion_block(char *file_path, void *T, int facteur_blockage,
                      size_t size_of_element, int n) {
   FILE *file = fopen(file_path, "r+b");
@@ -155,15 +155,9 @@ void insertion_block(char *file_path, void *T, int facteur_blockage,
   block.facteur_blockage = facteur_blockage;
   void *buffer;
   for (int i = 0; i < n; i = i + facteur_blockage) {
-    int facteur;
     if (i + facteur_blockage > n) {
-      facteur = facteur_blockage;
-      while (i + facteur > n) {
-        --facteur;
-      }
-      block.real_nb_block_element = facteur;
+      block.real_nb_block_element = n % facteur_blockage;
     } else {
-      facteur = facteur_blockage;
       block.real_nb_block_element = facteur_blockage;
     }
     block.block_size = size_of_element * facteur_blockage;
@@ -415,10 +409,10 @@ void read_file(GtkButton *button, gpointer user_data) {
   g_signal_connect(DeleteButton, "clicked", G_CALLBACK(Delete_gtk), NULL);
   fclose(file);
 }
-//fonction de recherche 
+// fonction de recherche
 void search(char *file_path, char *mat) {
   FILE *file = fopen(file_path, "rb");
-    // Lecture de l'en-tete du fichier
+  // Lecture de l'en-tete du fichier
   file_header header_file;
   fread(&header_file, sizeof(file_header), 1, file);
   Etudiant T[header_file.nb_element];
@@ -439,8 +433,9 @@ void search(char *file_path, char *mat) {
           // Creation d'un nouveau constructeur GTK pour la fenetre trouvee
           g_object_unref(found_builder);
           found_builder = gtk_builder_new();
-          gtk_builder_add_from_file(found_builder, "ressource/Student.glade", NULL);
-           // Recuperation de la fenetre et affichage
+          gtk_builder_add_from_file(found_builder, "ressource/Student.glade",
+                                    NULL);
+          // Recuperation de la fenetre et affichage
           GtkWidget *FoundWindow =
               GTK_WIDGET(gtk_builder_get_object(found_builder, "FoundWindow"));
           gtk_widget_show_all(FoundWindow);
@@ -481,7 +476,8 @@ void search(char *file_path, char *mat) {
         cx--;
       }
       i = i + block.real_nb_block_element;
-       // Verifier si des blocs vides suivent et ajuster la position du curseur de fichier
+      // Verifier si des blocs vides suivent et ajuster la position du curseur
+      // de fichier
       if (block.real_nb_block_element != block.facteur_blockage) {
         int empty = block.facteur_blockage - block.real_nb_block_element;
         fseek(file, sizeof(Etudiant) * empty, SEEK_CUR);
@@ -492,7 +488,8 @@ void search(char *file_path, char *mat) {
       fseek(file, sizeof(Etudiant) * (block.facteur_blockage), SEEK_CUR);
     }
   }
-  // Si l'etudiant n'a pas ete trouve, afficher une fenetre indiquant qu'il n'a pas ete trouve
+  // Si l'etudiant n'a pas ete trouve, afficher une fenetre indiquant qu'il n'a
+  // pas ete trouve
   if (found == 0) {
     g_object_unref(notfound_builder);
     notfound_builder = gtk_builder_new();
@@ -519,7 +516,7 @@ int supprimer(char *file_path, char *mat) {
   long offset;
   int j;
   int cx;
-          // Recherche du matricule specifie dans les blocs
+  // Recherche du matricule specifie dans les blocs
   while (fread(&block, sizeof(block_header), 1, file) > 0 && found == 0) {
     if (block.real_nb_block_element != 0) {
 
@@ -528,16 +525,16 @@ int supprimer(char *file_path, char *mat) {
                sizeof(Etudiant) * (block.real_nb_block_element);
       j = i;
       cx = block.real_nb_block_element;
-          // Iteration a travers le tableau pour trouver le matricule specifie
+      // Iteration a travers le tableau pour trouver le matricule specifie
       while (cx > 0) {
         if (strcmp(mat, T[j].matricule) == 0) {
           found = 1;
           --block.real_nb_block_element;
-           // Allocation de memoire pour un buffer stockant le bloc modifie
+          // Allocation de memoire pour un buffer stockant le bloc modifie
           void *buffer = malloc(sizeof(block_header) +
                                 sizeof(Etudiant) * (block.facteur_blockage));
           memcpy(buffer, &block, sizeof(block_header));
-           // Copie des enregistrements Etudiant, excluant celui supprime
+          // Copie des enregistrements Etudiant, excluant celui supprime
           if (i == j) {
             // memcpy(buffer + sizeof(block_header), T + 9, sizeof(Etudiant));
             memcpy(buffer + sizeof(block_header), T + (i + 1),
@@ -554,9 +551,9 @@ int supprimer(char *file_path, char *mat) {
                    T + j + 1,
                    sizeof(Etudiant) * (block.real_nb_block_element - j));
           }
-         // Deplacement du pointeur de fichier a la position avant le bloc
+          // Deplacement du pointeur de fichier a la position avant le bloc
           fseek(file, -offset, SEEK_CUR);
-         // Ecriture du bloc modifie dans le fichier
+          // Ecriture du bloc modifie dans le fichier
           fwrite(buffer,
                  sizeof(block_header) +
                      sizeof(Etudiant) * (block.facteur_blockage),
@@ -568,18 +565,19 @@ int supprimer(char *file_path, char *mat) {
         ++j;
       }
       i = i + block.real_nb_block_element;
-        // Deplacement du pointeur de fichier a la fin du bloc s'il n'est pas plein
+      // Deplacement du pointeur de fichier a la fin du bloc s'il n'est pas
+      // plein
       if (block.real_nb_block_element != block.facteur_blockage) {
         int empty = block.facteur_blockage - block.real_nb_block_element;
         fseek(file, sizeof(Etudiant) * (empty), SEEK_CUR);
       }
     }
-     // Deplacement du pointeur de fichier a la fin du bloc vide
+    // Deplacement du pointeur de fichier a la fin du bloc vide
     else {
       fseek(file, sizeof(Etudiant) * block.facteur_blockage, SEEK_CUR);
     }
   }
-   // Si une suppression a eu lieu, mise a jour de l'en-tete du fichier
+  // Si une suppression a eu lieu, mise a jour de l'en-tete du fichier
   if (found == 1) {
     fseek(file, 0, SEEK_END);
     --header.nb_element;
